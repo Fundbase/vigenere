@@ -2,6 +2,10 @@ require_relative '../lib/vigenere/email_cipher'
 
 RSpec.describe VIGENERE::EmailCipher do
 
+  def vigenere_key
+    '239^83&.7t7988J*'
+  end
+
   def encode_trivial str
     VIGENERE::EmailCipher.new(key: 'aaaaa').encode(str)
   end
@@ -15,7 +19,30 @@ RSpec.describe VIGENERE::EmailCipher do
   end
 
   def decode str
+    puts "key foo hello: #{VIGENERE::EmailCipher.new(key: 'foo').parse('ysGyoa7jLo5ADqsoiqCr_ysGya8o6sLfa6AuzsfrqtA@proxydomain.com')}"
     VIGENERE::EmailCipher.new(key: 'hello').decode(str)
+  end
+
+  def encoded args={}
+    key = vigenere_key
+    key = args[:key] if args[:key] != nil
+    from = 'abc@def.com'
+    from = args[:from] if args[:from] != nil
+    to = 'ghi@jkl.com'
+    to = args[:to] if args[:to] != nil
+    ec = VIGENERE::EmailCipher.new(key: key)
+    "#{ec.encode(from)}_#{ec.encode(to)}@gofundbase.com"
+  end
+
+  def encoded_reply_address args={}
+    key = vigenere_key
+    key = args[:key] if args[:key] != nil
+    from = 'abc@def.com'
+    from = args[:from] if args[:from] != nil
+    to = 'ghi@jkl.com'
+    to = args[:to] if args[:to] != nil
+    ec = VIGENERE::EmailCipher.new(key: key)
+    "#{ec.encode(to)}_#{ec.encode(from)}@gofundbase.com"
   end
 
   describe 'cycle' do
@@ -73,6 +100,39 @@ RSpec.describe VIGENERE::EmailCipher do
     it 'should work with an encoded at sign' do
       expect(decode encode '&a@hello.com').to eq('&a@hello.com')
       expect(decode encode 'hello@&a.com').to eq('hello@&a.com')
+    end
+  end
+
+  describe 'create email address' do
+    it 'should come up with a new email address for the receiver to reply to the sender' do
+      ec = VIGENERE::EmailCipher.new(key: vigenere_key)
+      expect(ec.create_email_address('ghi@jkl.com', 'abc@def.com', 'gofundbase.com')).to eq(encoded_reply_address)
+    end
+
+    it 'should be parsed correctly' do
+      ec = VIGENERE::EmailCipher.new(key: vigenere_key)
+      reply_addr = ec.create_email_address('ghi@jkl.com', 'abc@def.com', 'gofundbase.com')
+      expect(ec.parse(reply_addr)).to eq(from: 'ghi@jkl.com', to: 'abc@def.com')
+    end
+
+    it 'should work with underscores' do
+      ec = VIGENERE::EmailCipher.new(key: vigenere_key)
+      reply_addr = ec.create_email_address('gh_i@jk_l.com', 'a_bc@de_f.com', 'gofundbase.com')
+      expect(ec.parse(reply_addr)).to eq(from: 'gh_i@jk_l.com', to: 'a_bc@de_f.com')
+    end
+
+    it 'should work with dashes' do
+      ec = VIGENERE::EmailCipher.new(key: vigenere_key)
+      reply_addr = ec.create_email_address('gh-i@jk-l.com', 'a-bc@de-f.com', 'gofundbase.com')
+      expect(ec.parse(reply_addr)).to eq(from: 'gh-i@jk-l.com', to: 'a-bc@de-f.com')
+    end
+  end
+
+  describe 'parse email address' do
+    it 'should derive the original email addresses' do
+      expected = {from: 'abc@def.com', to: 'ghi@jkl.com'}
+      ec = VIGENERE::EmailCipher.new(key: vigenere_key)
+      expect(ec.parse(encoded)).to eq(expected)
     end
   end
 end
