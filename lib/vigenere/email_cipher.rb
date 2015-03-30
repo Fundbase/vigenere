@@ -93,5 +93,27 @@ module VIGENERE
       end
       alpha_decode decoded
     end
+
+    def split_addresses str
+      from = str[0, str.index('_')]
+      to = str[str.index('_')+1, str.length]
+
+      addresses = { from: from, to: to }
+    end
+
+    def parse email_address
+      encoded_addresses_string = email_address[0, email_address.index('@')]
+
+      encoded_addresses = split_addresses encoded_addresses_string
+
+      from_addr = decode(encoded_addresses[:from])
+      to_addr = decode(encoded_addresses[:to])
+
+      {from: from_addr, to: to_addr}
+    end
+
+    def create_email_address(from, to, domain)
+      "#{encode(from)}_#{encode(to)}@#{domain}"
+    end
   end
 end
