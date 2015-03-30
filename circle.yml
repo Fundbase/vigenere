@@ -1,0 +1,16 @@
+### CircleCi configuration file https://circleci.com/docs/configuration
+
+## Customize the test machine
+machine:
+  ruby:
+    version: ruby-2.1.2
+general:
+  artifacts:
+    - "log/test.log"
+
+dependencies:
+  override:
+    - bundle check --path=vendor/bundle || bundle install --path=vendor/bundle --no-deployment
+test:
+  override:
+    - bundle exec rspec spec
