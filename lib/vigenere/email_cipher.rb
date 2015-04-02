@@ -1,3 +1,5 @@
+require 'bitly'
+
 module VIGENERE
   class EmailCipher
     def initialize(args = {})
@@ -5,7 +7,6 @@ module VIGENERE
 
       # TODO: Add any characters that need to work here
       @alphabet.concat(('a'..'z').to_a)
-      @alphabet.concat(('A'..'Z').to_a)
       @alphabet.concat(('0'..'9').to_a)
       @alphabet.concat(['&','*','+','-','/','=','?','^','_','`','~','.'])
       @key = args[:key]
@@ -94,16 +95,15 @@ module VIGENERE
       alpha_decode decoded
     end
 
-    def split_addresses str
+    def split_addresses(str)
       from = str[0, str.index('_')]
       to = str[str.index('_')+1, str.length]
 
       addresses = { from: from, to: to }
     end
 
-    def parse email_address
-      encoded_addresses_string = email_address[0, email_address.index('@')]
-
+    def parse( email_address )
+      encoded_addresses_string = expand_bitly(email_address)
       encoded_addresses = split_addresses encoded_addresses_string
 
       from_addr = decode(encoded_addresses[:from])
@@ -112,8 +112,21 @@ module VIGENERE
       {from: from_addr, to: to_addr}
     end
 
+    def expand_bitly(email)
+      bitly_shortcut = email.gsub!(/(fb_user_|@gofundbase.com)/, '')
+      long_url = Bitly.client.expand("http://bit.ly/#{bitly_shortcut}").long_url
+      long_url.gsub!(/(\/|\.|http:)/,'')
+    end
+
+    def create_bitly(str)
+      str = "http://#{str}".scan(/.{1,24}/).join('.')
+      Bitly.client.shorten(str).user_hash
+    end
+
     def create_email_address(from, to, domain)
-      "#{encode(from)}_#{encode(to)}@#{domain}"
+      encrypted_email = "#{encode(from)}_#{encode(to)}"
+      bitly_shortcut = create_bitly(encrypted_email)
+      "fb_user_#{bitly_shortcut}@#{domain}"
     end
   end
 end
