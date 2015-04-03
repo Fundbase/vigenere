@@ -114,13 +114,32 @@ module VIGENERE
 
     def expand_bitly(email)
       bitly_shortcut = email.gsub!(/(fb_user_|@gofundbase.com)/, '')
+      bitly_shortcut = convert_dashes_to_uppercase(bitly_shortcut.downcase)
       long_url = Bitly.client.expand("http://bit.ly/#{bitly_shortcut}").long_url
       long_url.gsub!(/(\/|\.|http:)/,'')
     end
 
     def create_bitly(str)
       str = "http://#{str}".scan(/.{1,24}/).join('.')
-      Bitly.client.shorten(str).user_hash
+      bitly_shortcut = Bitly.client.shorten(str).user_hash
+      convert_upercase_to_dashes(bitly_shortcut)
+    end
+
+    def convert_upercase_to_dashes(str)
+      str = str.split('')
+      str.each_with_index do |char, index|
+        if /[[:upper:]]/.match(char)
+          str[index] = "-#{char.downcase}"
+        end
+      end
+      str.join
+    end
+
+    def convert_dashes_to_uppercase(str)
+      str.scan(/-\w/).each do |match|
+        str[match] = match[1].upcase
+      end
+      str
     end
 
     def create_email_address(from, to, domain)
