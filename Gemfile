@@ -4,4 +4,4 @@ group :test do
   gem 'rspec'
 end
 
-gem 'bitly', '~> 0.10.4 '
+gem 'bitly', '~> 1.1'
